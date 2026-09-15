@@ -44,6 +44,10 @@ Other options:
 
 `plan` generates a speculative execution plan: it shows which actions OpenTofu would take to reach the state described by the configuration, without performing them. Saving the plan with `-out` freezes the decision; `tofu apply <planfile>` then executes exactly those actions without re-planning — the canonical separation between decision and execution in automation.
 
+## Saved plan content and plan encryption
+
+The saved plan file carries the full configuration, the values associated with the planned changes, and the plan options including the input variables — treat it as a potentially sensitive artifact. With plan encryption enabled (the `encryption` block's `plan` section), the file is the encrypted envelope: only the encryption metadata alias is readable and the payload is ciphertext. Verified in the state-home birth window: the saved plan of an encryption-carrying root opened with `{"meta":{"state-encryption":"..."}}` and carried no plaintext configuration.
+
 ## Verified example
 
 ```shell

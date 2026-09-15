@@ -34,6 +34,10 @@ If no saved plan file is provided, `apply` also accepts all plan-customization o
 
 `apply` creates or updates infrastructure according to the configuration files in the current directory. Without a plan argument it generates a new plan and presents it for approval before taking any action; with a saved plan from `tofu plan -out=...` it executes exactly the described actions without any confirmation prompt — the deterministic path for CI/CD pipelines.
 
+## Troubleshooting: variable resolution with a saved plan
+
+With a saved plan file, no plan-customization options are accepted — `-var` and `-var-file` are rejected in that mode. A configuration whose `encryption` block references a variable still needs that variable resolved at apply time, because the engine must decrypt the saved plan. The failure is fail-closed before any mutation: `Failed to request input from user for variable var.<name>` and `Unable to compute static value` on the `encryption` block. The proven channel is the environment variable form, which the saved-plan mode accepts: `TF_VAR_<name>`. Verified in the state-home birth window: `tofu apply -no-color birth.tfplan` failed fail-closed without the variable, and `cmd /c "set TF_VAR_state_encryption_key=<KEY_RESOURCE> && tofu apply -no-color birth.tfplan"` applied exactly the saved plan (`Apply complete! Resources: 2 added, 0 changed, 0 destroyed.`).
+
 ## Verified example
 
 ```shell

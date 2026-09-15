@@ -21,7 +21,7 @@ tofu fmt [options] [target...]
 
 ## Architectural explanation
 
-`fmt` rewrites all OpenTofu configuration files to the canonical format: `.tf`, `.tfvars`, and `.tftest.hcl` files are updated; JSON variants (`.tf.json`, `.tfvars.json`, `.tftest.json`) are not modified. Targets can be directories, single files, or `-` for standard input. Content must be in the native OpenTofu language syntax; JSON is not supported. With `-check` the command is read-only and acts as the formatting gate for CI.
+`fmt` rewrites all OpenTofu configuration files to the canonical format: `.tf`, `.tofu`, `.tfvars`, `.tftest.hcl` and `.tofutest.hcl` files are processed; JSON variants (`.tf.json`, `.tfvars.json`, `.tftest.json`) are not modified. Targets can be directories, single files, or `-` for standard input. Content must be in the native OpenTofu language syntax; JSON is not supported. With `-check` the command is read-only and acts as the formatting gate for CI — verified in the state-home quality gate, where the check covered a `.tofutest.hcl` behavioral-proof file alongside the `.tf` files.
 
 ## Verified example
 

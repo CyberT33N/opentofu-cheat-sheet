@@ -24,6 +24,7 @@ The main purpose of the OpenTofu language is declaring resources, which represen
 - [state](state/overview.md) — state: purpose, storage, locking, encryption, remote access, workspaces
 - [symbol-libraries](symbol-libraries/overview.md) — symbol libraries for tooling integrations
 - [syntax](syntax/overview.md) — the native syntax, JSON syntax, and the style guide
+- [upgrade-guides](upgrade-guides/overview.md) — upgrade guidance for OpenTofu releases (currently: upgrading to OpenTofu v1.6)
 - [values](values/overview.md) — input variables, output values, and local values
 
 ## Standalone pages

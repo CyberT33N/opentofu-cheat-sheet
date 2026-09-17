@@ -56,4 +56,8 @@ tofu plan -out=tfplan -no-color
 
 Verified on OpenTofu v1.12.5 (windows_amd64) in the local sandbox: the plan proposed `2 to add, 0 to change, 0 to destroy` (one `terraform_data` resource in the root module, one in the child module) and was saved to `tfplan`.
 
+## Troubleshooting: validation cross-references must never form a cycle
+
+A plan that fails with `Error: Cycle` listing variable expansions and a local (for example `var.<a> (expand, reference), var.<b> (expand, reference), local.<x> (expand)`) reports a dependency cycle in the evaluation graph, not a formatting or value problem. The proven trigger: two `validation` blocks that reference each other's variable — directly or through a local — so the evaluation of each condition depends on the other. The resolution is the unidirectional form: bind the consistency check against the static declared topology of the configuration (for example a static local) instead of a second variable, so the reference graph stays acyclic. Verified on OpenTofu v1.12.5 (windows_amd64): the bidirectional pair failed every plan with `Error: Cycle` before any evaluation; the unidirectional form evaluated fail-closed on a violating value and passed on a valid one.
+
 Official documentation: [OpenTofu CLI documentation](https://opentofu.org/docs/cli/)

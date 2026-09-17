@@ -38,6 +38,10 @@ If no saved plan file is provided, `apply` also accepts all plan-customization o
 
 With a saved plan file, no plan-customization options are accepted — `-var` and `-var-file` are rejected in that mode. A configuration whose `encryption` block references a variable still needs that variable resolved at apply time, because the engine must decrypt the saved plan. The failure is fail-closed before any mutation: `Failed to request input from user for variable var.<name>` and `Unable to compute static value` on the `encryption` block. The proven channel is the environment variable form, which the saved-plan mode accepts: `TF_VAR_<name>`. Verified in the state-home birth window: `tofu apply -no-color birth.tfplan` failed fail-closed without the variable, and `cmd /c "set TF_VAR_state_encryption_key=<KEY_RESOURCE> && tofu apply -no-color birth.tfplan"` applied exactly the saved plan (`Apply complete! Resources: 2 added, 0 changed, 0 destroyed.`).
 
+## Troubleshooting: the cmd set carrier must not leak a trailing space
+
+When the `TF_VAR_<name>` channel is bound through `cmd /c "set TF_VAR_<name>=<VALUE> && tofu apply ..."`, a space between the value and the `&&` separator becomes part of the variable value, because the `cmd` `set` builtin assigns everything up to the command separator. A resource-reference variable then fails fail-closed before any mutation with `Resource name [...] does not match any known resource name pattern`. The canonical safe carrier is the quoted assignment form, which binds the value exactly: `cmd /c 'set "TF_VAR_<name>=<VALUE>" && tofu apply -no-color <PLAN>'`. Verified in the control-zone state-home window: the unquoted form with a space before `&&` failed with the resource-name pattern error on the encryption key reference, and the quoted form applied exactly the saved plan (`Apply complete! Resources: 2 added, 0 changed, 0 destroyed.`).
+
 ## Verified example
 
 ```shell

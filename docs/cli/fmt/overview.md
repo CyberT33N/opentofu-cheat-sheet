@@ -31,4 +31,12 @@ tofu fmt -check -diff -recursive
 
 Verified on OpenTofu v1.12.5 (windows_amd64) in the local sandbox: exit status `0` with no output — all configuration files (root module, child module, test file) already matched the canonical format.
 
+## Troubleshooting & verified behavior details
+
+- **`-diff` requires an external `diff` executable in `PATH`.** On Windows without a `diff` tool, `tofu fmt -check -diff -recursive` fails with exit status `2` and `Error: Failed to generate diff ... exec: "diff": executable file not found in %PATH%`. The failure only surfaces when at least one file actually differs — a fully formatted tree exits `0` without ever invoking `diff`. Verified on OpenTofu v1.12.5 (windows_amd64) with intentionally unformatted `.tf`, `.tofu`, and nested module files.
+- **The exact `-check` exit status is `3`** when files differ from the canonical format (upstream documents only "non-zero"); the output lists the affected file paths, correctly excluding `.tf.json` files and including `.tofu` files. Verified on OpenTofu v1.12.5 (windows_amd64).
+- **`-write=false` without `-check` renders the formatted content to stdout** instead of modifying files (verified in the default non-recursive scope: files in subdirectories are neither written nor rendered). Combined with `-list=false`, no file list is printed.
+- **STDIN mode:** piping content into `tofu fmt -` prints the formatted result to stdout and never writes files; `-list` and `-write` are always disabled in this mode. Verified on OpenTofu v1.12.5 (windows_amd64).
+- **JSON boundary re-verified through a write pass:** a deliberately unformatted `config.tf.json` remained byte-identical after `tofu fmt -recursive`, while the `.tf`, `.tofu`, and nested `.tf` files were rewritten; a subsequent `tofu fmt -check -recursive` returned exit status `0`.
+
 Official documentation: [OpenTofu CLI documentation](https://opentofu.org/docs/cli/)

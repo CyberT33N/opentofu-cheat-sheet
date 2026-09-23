@@ -52,4 +52,20 @@ A configuration whose `encryption` block references a variable (for example `kms
 
 PowerShell on Windows mangles value-carrying arguments such as `-var-file=window.tfvars` at the native-command boundary (the invocation fails with `Too many command line arguments`, and the engine then reports the truncated remainder as a missing file: `Given variables file window does not exist`). The official documentation recommends the Windows Command Prompt over PowerShell for variable passing; the proven carrier is a `cmd /c` subshell, for example `cmd /c "tofu init -input=false -no-color -var-file=window.tfvars"`.
 
+## Troubleshooting: `-backend=false` still reads the previously initialized state (OpenTofu v1.12.x)
+
+Verified on OpenTofu v1.12.5 (windows_amd64): the local help surface states that `-backend=false` will "use what was previously initialized instead", and the engine reads the state of the previously initialized backend during `init`. A working directory that was previously initialized against a real remote backend (for example `gcs`) therefore performs a remote state read even with `-backend=false`, and the read fails closed when the local credentials are expired:
+
+```text
+Error: Error loading state
+Failed to open state file at gs://<STATE_BUCKET>/<STATE_PREFIX>/default.tfstate:
+Get "https://storage.googleapis.com/<STATE_BUCKET>/<STATE_PREFIX>%2Fdefault.tfstate":
+auth: "invalid_grant" "reauth related error (invalid_rapt)"
+```
+
+The same class surfaces as `Unsupported state file format: This state file is encrypted` when the previously initialized state is client-side encrypted. Consequences for quality gates and CI:
+
+- Never run the `init -backend=false` gate form in place inside a working directory that carries a `.terraform` directory initialized against a real backend; run it against a clean copy of the tracked files (without `.terraform`), so that no previous initialization exists.
+- The behavior is fixed upstream by opentofu/opentofu#4077 ("Using -backend=false during tofu init now skips reading the local encrypted state"), present in the v1.13.0-beta1 prerelease changelog; the latest v1.12.x stable (v1.12.6) still carries the behavior.
+
 Official documentation: [OpenTofu CLI documentation](https://opentofu.org/docs/cli/)

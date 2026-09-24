@@ -60,4 +60,14 @@ Verified on OpenTofu v1.12.5 (windows_amd64) in the local sandbox: the plan prop
 
 A plan that fails with `Error: Cycle` listing variable expansions and a local (for example `var.<a> (expand, reference), var.<b> (expand, reference), local.<x> (expand)`) reports a dependency cycle in the evaluation graph, not a formatting or value problem. The proven trigger: two `validation` blocks that reference each other's variable — directly or through a local — so the evaluation of each condition depends on the other. The resolution is the unidirectional form: bind the consistency check against the static declared topology of the configuration (for example a static local) instead of a second variable, so the reference graph stays acyclic. Verified on OpenTofu v1.12.5 (windows_amd64): the bidirectional pair failed every plan with `Error: Cycle` before any evaluation; the unidirectional form evaluated fail-closed on a violating value and passed on a valid one.
 
+## Troubleshooting: org-policy reads fail with `403 SERVICE_DISABLED` under ADC (quota project)
+
+A plan or apply that touches `google_org_policy_policy` (or any other API that requires a quota project under ADC) fails with `googleapi: Error 403 ... The orgpolicy.googleapis.com API requires a quota project` attributed to the gcloud default consumer project when the engine runs under user ADC without the provider-side quota binding. Binding the quota project into the ADC file via `gcloud auth application-default set-quota-project <PROJECT_ID>` is necessary but not sufficient: the pinned Google provider sends the `X-Goog-User-Project` header only when `user_project_override = true` and a billing project are both set. The proven carrier form binds both on the engine process (provider v7.44.0):
+
+```powershell
+cmd /c 'set "USER_PROJECT_OVERRIDE=true" && set "GOOGLE_BILLING_PROJECT=<PROJECT_ID>" && set "GOOGLE_CLOUD_QUOTA_PROJECT=<PROJECT_ID>" && tofu plan -input=false -no-color -var-file=window.tfvars'
+```
+
+The caller needs `serviceusage.services.use` on the quota project (for example via `roles/serviceusage.serviceUsageConsumer`), and the API must be enabled on the quota project. Verified on OpenTofu v1.12.5 (windows_amd64) against the pinned provider v7.44.0: the plan failed twice without the pair (ADC file only, then a misnamed env binding) and completed with exit 2 once `USER_PROJECT_OVERRIDE` plus the billing project were bound on the process.
+
 Official documentation: [OpenTofu CLI documentation](https://opentofu.org/docs/cli/)

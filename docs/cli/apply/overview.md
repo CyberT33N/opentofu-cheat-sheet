@@ -50,4 +50,16 @@ tofu apply -no-color tfplan
 
 Verified on OpenTofu v1.12.5 (windows_amd64) in the local sandbox with the saved plan from [plan](../plan/overview.md): `Apply complete! Resources: 2 added, 0 changed, 0 destroyed.` with outputs `greeting = "hello"` and `module_greeting = "hello"`.
 
+## Troubleshooting: engine-driven Cloud Run job updates require `actAs` on the execution identity
+
+Verified on OpenTofu v1.12.5 (windows_amd64) against a live Google Cloud zone with the pinned provider v7.44.0: an apply that updates a `google_cloud_run_v2_job` whose template carries `service_account` fails per job with `googleapi: Error 403: Permission 'iam.serviceaccounts.actAs' denied on service account <SERVICE_ACCOUNT>` when the caller lacks `iam.serviceaccounts.actAs` on that identity. The role content proof matters: `roles/iam.serviceAccountAdmin` does NOT carry `actAs` (proven over `gcloud iam roles describe`); the predefined carrier is `roles/iam.serviceAccountUser`. The proven window form is a service-account-scoped grant of `roles/iam.serviceAccountUser` to the operator on exactly the affected execution identities, with a read-back per grant and its removal at hardening.
+
+## Troubleshooting: a saved plan is stale after a partial apply changed the state
+
+Verified on OpenTofu v1.12.5 (windows_amd64): re-applying a saved plan after an earlier apply run already persisted part of its actions fails before any mutation with `Error: Saved plan is stale` ("The given plan file can no longer be applied because the state was changed by another operation after the plan was created."). The state change by the own earlier apply is enough — no external actor is required. The resolution form: regenerate the plan against the current state (`tofu plan -out=...`); the regenerated plan shows exactly the remaining actions (already-persisted imports, creates, and updates drop out), and that plan applies cleanly.
+
+## Troubleshooting: IAM conditions on primitive roles are rejected at apply time
+
+Verified on OpenTofu v1.12.5 (windows_amd64) against a live Google Cloud project with the pinned provider v7.44.0: a `google_project_iam_member` that combines a primitive role (`roles/owner`, `roles/editor`, `roles/viewer`) with a `condition` block fails at apply with `googleapi: Error 400: LintValidationUnits/BindingRoleAllowConditionCheck Error: Conditions can't be set on primitive roles., badRequest`. The failure is fail-closed before any mutation of the policy and isolated to that resource — independent resources of the same apply complete normally. The CLI reference states the same restriction on the `--condition` flag ("`--role` cannot be a basic role"). Time-bound or otherwise conditioned bindings require a non-primitive role (predefined or custom); a primitive role can only ever be bound unconditionally.
+
 Official documentation: [OpenTofu CLI documentation](https://opentofu.org/docs/cli/)

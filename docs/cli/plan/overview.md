@@ -70,4 +70,10 @@ cmd /c 'set "USER_PROJECT_OVERRIDE=true" && set "GOOGLE_BILLING_PROJECT=<PROJECT
 
 The caller needs `serviceusage.services.use` on the quota project (for example via `roles/serviceusage.serviceUsageConsumer`), and the API must be enabled on the quota project. Verified on OpenTofu v1.12.5 (windows_amd64) against the pinned provider v7.44.0: the plan failed twice without the pair (ADC file only, then a misnamed env binding) and completed with exit 2 once `USER_PROJECT_OVERRIDE` plus the billing project were bound on the process.
 
+## Troubleshooting: IAM bindings survive `plan` — proven read-only against the environment (OpenTofu v1.12.x)
+
+Verified on OpenTofu v1.12.5 (windows_amd64) against a live Google Cloud zone with the pinned provider v7.44.0: with 16 operator IAM bindings freshly granted and read-back-proven on the zone projects and the organization, `tofu plan -input=false -no-color -var-file=window.tfvars -out=window.tfplan` completed with exit 0 and proposed zero destroy actions, and the full IAM read-back immediately after the run proved every binding intact. The project's admin activity audit log (`logName:"cloudaudit.googleapis.com" AND protoPayload.methodName:"SetIamPolicy"`) shows zero IAM writes between the grant and the post-plan read-back. The only write effect of `plan` is the local plan file under `-out` — matching the official contract: "The `plan` command alone does not actually carry out the proposed changes."
+
+Incident-class resolution: when operator bindings are found missing after a window, the actor evidence lives in the admin activity audit log, never in the engine. A removal that fails with `Policy binding with the specified principal, role, and condition not found!` signals that the binding is already absent — the audit timeline then shows which earlier `SetIamPolicy` call removed it and under which identity.
+
 Official documentation: [OpenTofu CLI documentation](https://opentofu.org/docs/cli/)

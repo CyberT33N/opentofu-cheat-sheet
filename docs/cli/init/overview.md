@@ -68,4 +68,8 @@ The same class surfaces as `Unsupported state file format: This state file is en
 - Never run the `init -backend=false` gate form in place inside a working directory that carries a `.terraform` directory initialized against a real backend; run it against a clean copy of the tracked files (without `.terraform`), so that no previous initialization exists.
 - The behavior is fixed upstream by opentofu/opentofu#4077 ("Using -backend=false during tofu init now skips reading the local encrypted state"), present in the v1.13.0-beta1 prerelease changelog; the latest v1.12.x stable (v1.12.6) still carries the behavior.
 
+## Troubleshooting: IAM bindings survive `init` — writes only the local working directory (OpenTofu v1.12.x)
+
+Verified on OpenTofu v1.12.5 (windows_amd64) against a live Google Cloud zone with the pinned provider v7.44.0: with 16 operator IAM bindings freshly granted and read-back-proven, `tofu init -input=false -no-color -var-file=window.tfvars` against the encrypted `gcs` backend completed with `OpenTofu has been successfully initialized!`, and the full IAM read-back immediately after the run proved every binding intact. `init` creates and updates only the local working directory (`.terraform`: modules, providers, backend initialization); the remote state is touched only by the explicit `-migrate-state` form, and no remote resource or IAM surface is ever written — matching the official contract: "this command will never delete your existing configuration or state", and the command is "always safe to run multiple times".
+
 Official documentation: [OpenTofu CLI documentation](https://opentofu.org/docs/cli/)
